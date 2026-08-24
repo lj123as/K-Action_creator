@@ -76,3 +76,9 @@ notes: string
 ```
 
 Generated output remains proposed until action-system lifecycle review and KA-system orchestration accept it.
+
+## Implementation（2026-08-24）
+
+- `tools/generation_dispatch.py`：GenerationRequest v1 -> 本地骨架（init_system.py --no-github）-> component.yaml -> action-registry proposed -> handoff 报告与 `action.generation.handoff` 事件。
+- 通道：请求盒 `type: create-action`（由 knowledge-network poller 路由到本工具）；门控 `review_status: approved`；`--dry-run` 预演；人工显式授权用 `--allow-unreviewed`。
+- GenerationRequest v1 frontmatter 示例：id / candidate_id / subsystem / description / review_status: approved。
