@@ -37,7 +37,8 @@ candidate_type: action
 candidate_id: string
 source_draft_id: string
 intent: string
-requested_capability: string
+action_type: string          # canonical Action Type (from Action Type Catalog; Cognition semantic result)
+requested_capability: string # resolve result = manifest creators[action_type]
 target_subsystem_hint: string
 inputs:
   cognition_links: []
