@@ -1,11 +1,12 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """K-Action_creator Runtime API: create Action Instance from an approved ActionSpecification v1.
 
 Flow: ActionSpecification -> resolve action_type via manifest Action Type Catalog + creators ->
-create instance record in .knowledge/state/action-instances.json + action.instance.created event.
-Stdlib only. This is the runtime path (not capability-dev scaffolding).
+call provider capability create_instance(spec) -> record in .knowledge/state/action-instances.json
++ action.instance.created event.
+Stdlib only. Runtime path (not capability-dev scaffolding).
 """
-import argparse, json, os, re, sys
+import argparse, importlib.util, json, os, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -33,7 +34,6 @@ def parse_fm(text):
     return fm
 
 def load_action_types():
-    """Parse .knowledge/manifest.yaml action_types section (stdlib-only)."""
     mf = VAULT / ".knowledge/manifest.yaml"
     types = {}
     if not mf.exists():
@@ -57,11 +57,26 @@ def load_action_types():
             cur["creators"] = [c.strip().strip(chr(91)) for c in raw.strip(chr(93)).split(",") if c.strip().strip(chr(91))]
         elif s.startswith("-") and cur is not None and s[1:].strip():
             cur["creators"].append(s[1:].strip())
-        elif s.startswith("owner:"):
-            pass
     if cur:
         types[cur["id"]] = cur["creators"]
     return types
+
+def call_provider_create(provider, spec):
+    """Load provider component create_instance(spec) entry (design_model*.py)."""
+    for mod in ("design_model.py", "design_model_provider.py"):
+        path = VAULT / "action" / provider / mod
+        if not path.exists():
+            continue
+        try:
+            spec_l = importlib.util.spec_from_file_location("p_" + provider + "_" + mod.split(".")[0], path)
+            m = importlib.util.module_from_spec(spec_l)
+            spec_l.loader.exec_module(m)
+            fn = getattr(m, "create_instance", None)
+            if fn:
+                return fn(spec, vault=VAULT), None
+        except Exception as e:
+            return None, "provider load failed: " + str(e)[:200]
+    return None, "provider create_instance not found"
 
 def event(payload):
     EVENTS.mkdir(parents=True, exist_ok=True)
@@ -103,6 +118,9 @@ def main():
         return 2
     provider = creators[0]
     spec_id = fm.get("spec_id") or ("spec-" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S"))
+    cap_instance, cap_err = call_provider_create(provider, fm)
+    cap_out = cap_instance.get("instance") if cap_instance and cap_instance.get("exit") == 0 else None
+    cap_err = cap_err or (cap_instance.get("error") if cap_instance and cap_instance.get("exit") != 0 else None)
     instance = {
         "instance_id": "act-" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S"),
         "spec_id": spec_id,
@@ -112,6 +130,8 @@ def main():
         "provider": provider,
         "state": "created",
         "input": {k: fm[k] for k in ("requirements", "input") if fm.get(k)},
+        "capability_instance": cap_out,
+        "capability_error": cap_err,
         "created_at": now_iso(),
         "last_run": "",
         "health": "ok",
