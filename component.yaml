@@ -1,4 +1,4 @@
-# Action Orchestrator 组件声明（目录名 K-Action_orchestrator；id 已更新）
+# Action Orchestrator 组件声明（组件 id: action-orchestrator）
 id: action-orchestrator
 dir:
   - cognition/K-Action_orchestrator

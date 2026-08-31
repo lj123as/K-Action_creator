@@ -2,6 +2,23 @@
 
 > Public interface summary for `action/K-Action_orchestrator` (component id: action-orchestrator). Cognition capabilities owner: `cognition/K-Action_orchestrator/capabilities.md`.
 
+## Action Request → Action Operation（运行时统一入口）
+
+Action Request 统一模型：AI Client / KA-System 提交 Action Request（action_type + operation），经 `tools/action_ops.py` 执行：
+
+```text
+Action Request（action_type + operation）
+  → manifest action_types.operations 白名单校验
+  → Type Capability resolve（manifest creators ↔ component.yaml 双向声明）
+  → provider 调用（action/<type_provider> 组件）
+  → Action Instance（.knowledge/state/action-instances.json）+ events
+```
+
+- 门控：create 需 `review_status: approved`（ActionSpecification v1）。
+- 请求盒通道：knowledge-network poller 的 `create-action` 请求路由到本入口（operation 默认 create，可用 frontmatter `operation` 覆盖）。
+- 运行时信封（dispatch / schedule / health / retry / audit）由 KA-System 提供；操作执行统一走本入口，不绕过。
+
+
 ## `action-candidate-intake`
 
 - Owner: K-Action_orchestrator.
@@ -81,7 +98,7 @@ Generated output remains proposed until action-system lifecycle review and KA-sy
 ## Implementation（2026-08-24）
 
 - `tools/capability_dev.py`：GenerationRequest v1 -> 本地骨架（init_system.py --no-github）-> component.yaml -> action-registry proposed -> handoff 报告与 `action.generation.handoff` 事件。
-- 通道：请求盒 `type: create-action`（由 knowledge-network poller 路由到本工具）；门控 `review_status: approved`；`--dry-run` 预演；人工显式授权用 `--allow-unreviewed`。
+- 通道：开发环境直接调用（CLI / SKILL）；生产请求盒 `type: create-action` 已收敛到 `tools/action_ops.py` 统一入口，不再路由到本工具。门控 `review_status: approved`；`--dry-run` 预演；人工显式授权用 `--allow-unreviewed`。
 - GenerationRequest v1 frontmatter 示例：id / candidate_id / subsystem / description / review_status: approved。
 
 - `tools/action_ops.py`（统一 Action Operation 编排：create / update / execute / validate；按 action_type + operation 解析 Type Capability（manifest operations 白名单）并调用 provider；实例状态落 `.knowledge/state/action-instances.json`；`--dry-run` 预演）。
