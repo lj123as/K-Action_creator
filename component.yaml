@@ -1,7 +1,7 @@
-# Action Orchestrator 组件声明（目录名 K-Action_creator；id 已更新）
+# Action Orchestrator 组件声明（目录名 K-Action_orchestrator；id 已更新）
 id: action-orchestrator
 dir:
-  - cognition/K-Action_creator
+  - cognition/K-Action_orchestrator
   - action/K-Action_orchestrator
 version: 1.0.0
 provides:

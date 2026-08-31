@@ -1,19 +1,19 @@
 # K-Action Orchestrator Public Interfaces
 
-> Public interface summary for `action/K-Action_orchestrator` (component id: action-orchestrator). Cognition capabilities owner: `cognition/K-Action_creator/capabilities.md`.
+> Public interface summary for `action/K-Action_orchestrator` (component id: action-orchestrator). Cognition capabilities owner: `cognition/K-Action_orchestrator/capabilities.md`.
 
 ## `action-candidate-intake`
 
-- Owner: K-Action_creator.
+- Owner: K-Action_orchestrator.
 - Producer: knowledge-network candidate-generation, KA-system dispatch, or human operator.
-- Consumer: K-Action_creator generation workflow.
+- Consumer: K-Action_orchestrator generation workflow.
 - Input: reviewed `ActionCandidate v1`, target cognition SSOT, capability summary, expected safe write paths, and constraints.
 - Output: generation request.
 - Review behavior: unreviewed candidates remain pending.
 
 ## `subsystem-skeleton-generation`
 
-- Owner: K-Action_creator.
+- Owner: K-Action_orchestrator.
 - Producer: reviewed generation request.
 - Consumer: generation tool or skill.
 - Output: initial action subsystem skeleton, README draft, registry draft, and handoff note.
@@ -22,7 +22,7 @@
 
 ## `generation-handoff`
 
-- Owner: K-Action_creator.
+- Owner: K-Action_orchestrator.
 - Producer: generation workflow.
 - Consumer: action-system lifecycle and KA-system registry.
 - Output: handoff record describing generated files, initial status, owner cognition, and follow-up checks.
