@@ -1,10 +1,10 @@
-# Action Creator 组件声明（目录名 K-Action_creator）
-id: action-creator
+# Action Orchestrator 组件声明（目录名 K-Action_creator；id 已更新）
+id: action-orchestrator
 dir:
   - cognition/K-Action_creator
   - action/K-Action_creator
 version: 1.0.0
 provides:
-  - action.create      # 新 action subsystem 骨架生成（含 component.yaml）
+  - action.operate     # Action Operation 统一编排：create/update/execute/validate（Type Contract 分派）
 requires:
-  - knowledge.query    # 消费 ActionCandidate v1
+  - knowledge.query    # 消费 ActionCandidate / Action Specification v1

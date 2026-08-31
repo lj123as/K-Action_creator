@@ -1,6 +1,6 @@
-# K-Action Creator Public Interfaces
+# K-Action Orchestrator Public Interfaces
 
-> Public interface summary for `action/K-Action_creator`. Cognition capabilities owner: `cognition/K-Action_creator/capabilities.md`.
+> Public interface summary for `action/K-Action_creator` (component id: action-orchestrator). Cognition capabilities owner: `cognition/K-Action_creator/capabilities.md`.
 
 ## `action-candidate-intake`
 
@@ -84,4 +84,4 @@ Generated output remains proposed until action-system lifecycle review and KA-sy
 - 通道：请求盒 `type: create-action`（由 knowledge-network poller 路由到本工具）；门控 `review_status: approved`；`--dry-run` 预演；人工显式授权用 `--allow-unreviewed`。
 - GenerationRequest v1 frontmatter 示例：id / candidate_id / subsystem / description / review_status: approved。
 
-- `tools/create_instance.py`（Runtime API：ActionSpecification v1 -> manifest Action Type Catalog/creators 解析 -> 写 `.knowledge/state/action-instances.json` + `action.instance.created` 事件；门控 review_status/status=approved；`--dry-run` 预演）。
+- `tools/action_ops.py`（统一 Action Operation 编排：create / update / execute / validate；按 action_type + operation 解析 Type Capability（manifest operations 白名单）并调用 provider；实例状态落 `.knowledge/state/action-instances.json`；`--dry-run` 预演）。
