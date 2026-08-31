@@ -1,6 +1,6 @@
 # K-Action Orchestrator Public Interfaces
 
-> Public interface summary for `action/K-Action_creator` (component id: action-orchestrator). Cognition capabilities owner: `cognition/K-Action_creator/capabilities.md`.
+> Public interface summary for `action/K-Action_orchestrator` (component id: action-orchestrator). Cognition capabilities owner: `cognition/K-Action_creator/capabilities.md`.
 
 ## `action-candidate-intake`
 

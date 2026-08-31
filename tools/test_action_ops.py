@@ -2,7 +2,7 @@ import json, os, subprocess, sys, tempfile
 from pathlib import Path
 
 ROOT = Path.cwd()
-TOOL = ROOT / "action/K-Action_creator/tools/action_ops.py"
+TOOL = ROOT / "action/K-Action_orchestrator/tools/action_ops.py"
 
 def make_vault(root: Path, provider="fake_ss", prov_impl=None):
     (root / ".knowledge" / "state").mkdir(parents=True)

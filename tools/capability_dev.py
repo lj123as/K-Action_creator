@@ -10,7 +10,7 @@ from pathlib import Path
 VAULT = Path(os.environ.get("KA_VAULT_ROOT", ".")).resolve()
 REPORTS = VAULT / ".knowledge/reports"
 EVENTS = VAULT / ".knowledge/events"
-INIT = VAULT / "action/K-Action_creator/skills/create-action-system/scripts/init_system.py"
+INIT = VAULT / "action/K-Action_orchestrator/skills/create-action-system/scripts/init_system.py"
 REGTOOL = VAULT / "action/action-system/tools/action_registry.py"
 N = chr(10)
 
