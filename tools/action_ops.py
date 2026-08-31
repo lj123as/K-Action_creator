@@ -82,7 +82,7 @@ def load_provider(provider, mod, fn_name):
         return None, "provider load failed: " + str(e)[:200]
 
 def call_provider(provider, fn_name, *args):
-    for mod in ("design_model.py", "design_model_provider.py"):
+    for mod in ("action_provider.py", "design_model.py", "design_model_provider.py"):
         m, fn = load_provider(provider, mod, fn_name)
         if isinstance(fn, str):
             return None, fn
