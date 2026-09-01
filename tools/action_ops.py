@@ -305,7 +305,15 @@ def op_register(fm, types, apply=False):
             "applied": apply, "manifest": str(mf.relative_to(VAULT))}
 
 
+def _utf8_io():
+    for stream in (sys.stdin, sys.stdout):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError):
+            pass
+
 def main():
+    _utf8_io()
     ap = argparse.ArgumentParser()
     ap.add_argument("command", choices=list(OPS))
     ap.add_argument("request", nargs="?", default="-")
