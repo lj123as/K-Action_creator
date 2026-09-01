@@ -17,10 +17,10 @@ def make_vault(root: Path, provider="fake_ss", prov_impl=None):
         "action_types:",
         "  - id: software-system",
         "    creators: [" + provider + "]",
-        "    operations: [create, update, execute, validate]",
+        "    operations: [create, update, execute, validate, register]",
         "  - id: agentic-software",
         "    creators: [agentic-software]",
-        "    operations: [create, update, execute, validate]",
+        "    operations: [create, update, execute, validate, register]",
     ]), encoding="utf-8")
     return root
 
@@ -112,3 +112,26 @@ def test_operation_rejects_unknown_operation():
         spec = make_spec(vault, name="bad.md", op="delete")
         p = run(vault, "delete", str(spec))
         assert p.returncode == 2, p.stdout
+
+
+def test_register_reconciles_manifest_from_component_contract():
+    with tempfile.TemporaryDirectory() as td:
+        vault = Path(td)
+        make_vault(vault, provider="fake_ss", prov_impl=PROVIDER_IMPL)
+        comp = vault / "action" / "fake_ss"
+        comp.mkdir(parents=True, exist_ok=True)
+        (comp / "component.yaml").write_text("id: fake_ss\naction_types:\n  - new-type\n", encoding="utf-8")
+        mf = vault / ".knowledge/manifest.yaml"
+        before = mf.read_text(encoding="utf-8")
+        spec = make_spec(vault, name="reg.md")
+        r = run(vault, "register", str(spec))
+        assert r.returncode == 0, r.stderr
+        assert mf.read_text(encoding="utf-8") == before
+        r2 = run(vault, "register", "--apply", str(spec))
+        assert r2.returncode == 0, r2.stderr
+        after = mf.read_text(encoding="utf-8")
+        assert "  - id: new-type" in after
+        assert "creators: [fake_ss]" in after
+        r3 = run(vault, "register", "--apply", str(spec))
+        assert r3.returncode == 0, r3.stderr
+        assert mf.read_text(encoding="utf-8") == after

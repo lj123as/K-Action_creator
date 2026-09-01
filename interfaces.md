@@ -101,4 +101,4 @@ Generated output remains proposed until action-system lifecycle review and KA-sy
 - 通道：开发环境直接调用（CLI / SKILL）；生产请求盒 `type: create-action` 已收敛到 `tools/action_ops.py` 统一入口，不再路由到本工具。门控 `review_status: approved`；`--dry-run` 预演；人工显式授权用 `--allow-unreviewed`。
 - GenerationRequest v1 frontmatter 示例：id / candidate_id / subsystem / description / review_status: approved。
 
-- `tools/action_ops.py`（统一 Action Operation 编排：create / update / execute / validate；按 action_type + operation 解析 Type Capability（manifest operations 白名单）并调用 provider；实例状态落 `.knowledge/state/action-instances.json`；`--dry-run` 预演）。
+- `tools/action_ops.py`（统一 Action Operation 编排：create / update / execute / validate / register；按 action_type + operation 解析 Type Capability（manifest operations 白名单）并调用 provider；实例状态落 `.knowledge/state/action-instances.json`；`register` 对账 Type Contract → manifest（默认 dry-run，`--apply` 落盘）；`--dry-run` 预演）。

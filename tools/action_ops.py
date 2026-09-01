@@ -19,7 +19,7 @@ STATE = VAULT / ".knowledge/state"
 INSTANCES = STATE / "action-instances.json"
 EVENTS = VAULT / ".knowledge/events"
 N = chr(10)
-OPS = ("create", "update", "execute", "validate")
+OPS = ("create", "update", "execute", "validate", "register")
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
@@ -219,11 +219,98 @@ def op_validate(fm, types):
         return {"exit": 2, "valid": False, "issues": issues}
     return {"exit": 0, "valid": True, "instance": inst}
 
+def component_declared_types(path):
+    """Parse action_types block of a component.yaml (Type Contract 声明源)."""
+    types, in_at = [], False
+    for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        s = line.rstrip()
+        if s.strip() == "action_types:":
+            in_at = True
+            continue
+        if not in_at:
+            continue
+        if s.strip().startswith("- "):
+            types.append(s.strip()[2:].strip())
+        elif s and not s.startswith(" ") and s.strip() and not s.strip().startswith("#"):
+            in_at = False
+    return types
+
+
+def registry_entry(type_id, provider, ops):
+    return ["  - id: " + type_id,
+            "    description: Registered by K-Action_orchestrator register (Type Contract reconcile)",
+            "    owner: action-system",
+            "    creators: [" + provider + "]",
+            "    operations: [" + ", ".join(ops) + "]"]
+
+
+def op_register(fm, types, apply=False):
+    """Loop 3: reconcile Type Contract (component.yaml) into Action System Registry (manifest action_types).
+
+    Source of truth for first discovery is the source contract, not registration
+    by "an Action registering itself". register/reconcile only maintains the
+    registry (missing types / creator mismatches), dry-run default.
+    """
+    atype = str(fm.get("action_type", "")).strip()
+    if atype not in types:
+        return {"exit": 2, "error": "action_type unknown (use an existing catalog type to locate provider): " + atype}
+    provider = (types[atype]["creators"] or [""])[0]
+    cy = VAULT / "action" / provider / "component.yaml"
+    if not cy.exists():
+        return {"exit": 2, "error": "provider component.yaml not found: " + str(cy)}
+    declared = component_declared_types(cy)
+    if not declared:
+        return {"exit": 2, "error": provider + " component.yaml declares no action_types"}
+    mf = VAULT / ".knowledge/manifest.yaml"
+    if not mf.exists():
+        return {"exit": 2, "error": "manifest not found: " + str(mf)}
+    raw = mf.read_text(encoding="utf-8", errors="ignore")
+    mf_nl = "\r\n" if "\r\n" in raw else "\n"
+    lines = raw.split(mf_nl)
+    missing, creator_fixes = [], []
+    for dt in declared:
+        if dt not in types:
+            missing.append(dt)
+        elif provider not in types[dt]["creators"]:
+            creator_fixes.append((dt, provider))
+    changed_lines = list(lines)
+    if apply:
+        if not lines[-1]:
+            changed_lines = lines[:-1]
+        for dt in missing:
+            changed_lines += registry_entry(dt, provider, ["create", "update", "execute", "validate"])
+        for dt, prov in creator_fixes:
+            # find the "creators:" line under the matching - id: dt block
+            in_block = False
+            for i, ln in enumerate(changed_lines):
+                s = ln.strip()
+                if s.startswith("- id:") and s.split(":", 1)[1].strip() == dt:
+                    in_block = True
+                    continue
+                if in_block and ln.strip().startswith("creators:"):
+                    raw_c = ln.strip().split(":", 1)[1].strip()
+                    raw_c = raw_c.strip("[ ]").strip()
+                    cur = [c.strip() for c in raw_c.split(",") if c.strip()]
+                    if prov not in cur:
+                        indent = ln[:len(ln) - len(ln.lstrip())]
+                        changed_lines[i] = indent + "creators: [" + ", ".join(cur + [prov]) + "]"
+                    in_block = False
+        mf.write_text(mf_nl.join(changed_lines) + mf_nl, encoding="utf-8")
+    event("action.type.registered", {"action_type": atype, "provider": provider,
+                                     "missing": missing, "creator_fixes": [x[0] for x in creator_fixes],
+                                     "applied": apply})
+    return {"exit": 0, "action_type": atype, "provider": provider,
+            "declared_types": declared, "missing_types": missing,
+            "creator_added": [x[0] for x in creator_fixes],
+            "applied": apply, "manifest": str(mf.relative_to(VAULT))}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("command", choices=list(OPS))
     ap.add_argument("request", nargs="?", default="-")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--apply", action="store_true", help="register: write registry reconcile changes into manifest")
     args = ap.parse_args()
     text = sys.stdin.read() if args.request == "-" else Path(args.request).read_text(encoding="utf-8", errors="ignore")
     fm = parse_fm(text)
@@ -248,6 +335,8 @@ def main():
         result = op_update(fm, types)
     elif op == "execute":
         result = op_execute(fm, types)
+    elif op == "register":
+        result = op_register(fm, types, apply=args.apply)
     else:
         result = op_validate(fm, types)
     if result.get("exit") == 2:
