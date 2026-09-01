@@ -135,3 +135,17 @@ def test_register_reconciles_manifest_from_component_contract():
         r3 = run(vault, "register", "--apply", str(spec))
         assert r3.returncode == 0, r3.stderr
         assert mf.read_text(encoding="utf-8") == after
+
+
+def test_catalog_lists_registered_action_types():
+    with tempfile.TemporaryDirectory() as td:
+        vault = Path(td)
+        make_vault(vault, provider="fake_ss", prov_impl=PROVIDER_IMPL)
+        p = run(vault, "catalog")
+        assert p.returncode == 0, p.stderr
+        data = json.loads(p.stdout)
+        ids = [t["id"] for t in data["action_types"]]
+        assert ids == ["agentic-software", "software-system"]
+        ss = [t for t in data["action_types"] if t["id"] == "software-system"][0]
+        assert "fake_ss" in ss["creators"]
+        assert "register" in ss["operations"]

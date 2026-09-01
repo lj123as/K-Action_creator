@@ -19,7 +19,7 @@ STATE = VAULT / ".knowledge/state"
 INSTANCES = STATE / "action-instances.json"
 EVENTS = VAULT / ".knowledge/events"
 N = chr(10)
-OPS = ("create", "update", "execute", "validate", "register")
+OPS = ("create", "update", "execute", "validate", "register", "catalog")
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
@@ -320,6 +320,15 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--apply", action="store_true", help="register: write registry reconcile changes into manifest")
     args = ap.parse_args()
+    if args.command == "catalog":
+        types = load_action_types()
+        print(json.dumps({
+            "action_types": [
+                {"id": tid, "creators": meta.get("creators", []), "operations": meta.get("operations", [])}
+                for tid, meta in sorted(types.items())
+            ]
+        }, ensure_ascii=False, indent=1))
+        return 0
     text = sys.stdin.read() if args.request == "-" else Path(args.request).read_text(encoding="utf-8", errors="ignore")
     fm = parse_fm(text)
     op = args.command
