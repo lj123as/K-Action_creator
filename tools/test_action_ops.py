@@ -43,7 +43,7 @@ PROVIDER_IMPL = chr(10).join([
     "def create_instance(spec, vault=None):",
     '    return {"exit": 0, "instance": {"instance_type": "FakeSoftwareInstance/v1", "subject": spec.get("subject", ""), "state": "created"}}',
     "def execute(instance, spec=None, vault=None):",
-    '    return {"exit": 0, "executed": True, "state": "done"}',
+    '    return {"exit": 0, "executed": True, "state": "done", "maintenance": {"added": 1, "dry_run": True}}',
     "def validate(instance, spec=None, vault=None):",
     '    return {"exit": 0, "valid": True}',
     "def schema():",
@@ -89,6 +89,7 @@ def test_update_and_execute_operations_mutate_instance_state():
         inst = json.loads(state.read_text(encoding="utf-8"))["instances"][0]
         assert inst["state"] in ("running", "done", "failed")
         assert inst.get("last_run")
+        assert inst.get("maintenance") == {"added": 1, "dry_run": True}
 
 def test_validate_operation_checks_instance_and_provider():
     with tempfile.TemporaryDirectory() as td:

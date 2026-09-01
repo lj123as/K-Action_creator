@@ -189,6 +189,14 @@ def op_execute(fm, types):
         final = "failed"
     inst["state"] = final
     inst["last_end"] = now_iso() if final in ("done", "failed") else ""
+    if isinstance(cap_out, dict):
+        for k in ("maintenance", "note"):
+            if cap_out.get(k) is not None:
+                inst[k] = cap_out[k]
+        if cap_out.get("error"):
+            inst["capability_error"] = cap_out["error"]
+    if cap_err:
+        inst["capability_error"] = cap_err
     save_instances(data)
     event("action.instance.executed", {"instance_id": inst["instance_id"], "state": final})
     return {"status": final, "instance": inst}
